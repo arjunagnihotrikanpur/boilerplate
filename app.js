@@ -4,6 +4,9 @@ const app = express();
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const ejs = require('ejs');
+const cookieParser = require('cookie-parser');
+const flash = require('connect-flash');
+const session = require('express-session');
 
 // testing branch
 
@@ -22,11 +25,23 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.set('view-engine', 'ejs');
 
+// Cookie Parser, Sessions & Flash
+app.use(cookieParser('secretstringforcookies'));
+app.use(session({
+    secret: "secretstringforsession",
+    cookie: { maxAge: 60000 },
+    resave: true,
+    saveUninitialized: true
+}))
+app.use(flash());
+
 //  ---- Routes ----
 
 // Frontend
 app.get('/', (req, res) =>{
-    res.render('index.ejs');
+    const userName = req.flash('user');
+
+    res.render('index.ejs', { userName: userName });
 })
 
 app.get('/register', (req, res) => {
@@ -86,6 +101,7 @@ app.post('/login', async (req, res) => {
                 //if both match than you can do anything
                 if (data) {
                     let doc = await User.findOneAndUpdate({email: req.body.email}, {loggedIn: true});
+                    req.flash('user', user.name);
                     res.redirect('/');
                 } else {
                     res.render('login.ejs', {msg: "Incorrect credentials"});
@@ -94,6 +110,8 @@ app.post('/login', async (req, res) => {
             })
 
         })
+
+    
     
 })
 
