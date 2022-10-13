@@ -8,7 +8,6 @@ const cookieParser = require('cookie-parser');
 const flash = require('connect-flash');
 const session = require('express-session');
 
-// testing branch
 
 // Database
 mongoose.connect(process.env.CONNECTION, () => console.log("Connected To Databse"));
@@ -38,10 +37,16 @@ app.use(flash());
 //  ---- Routes ----
 
 // Frontend
-app.get('/', (req, res) =>{
-    const userName = req.flash('user');
+app.get('/', async (req, res) =>{
+    const userEmail = req.flash('userEmail');
+    if(userEmail != null) {
+        User.findOne({ email: userEmail })
+        .then(async user => {
+            if (!user) return res.render('login.ejs', {msg: "some error occured"})
 
-    res.render('index.ejs', { userName: userName });
+            res.render('index.ejs', {user: user});
+        })
+    }
 })
 
 app.get('/register', (req, res) => {
@@ -65,9 +70,9 @@ app.post('/register', async (req, res) => {
     })
     user.save((err, data) => {
         if(!err) {
-            res.send(data);
+            console.log(data);  
         } else {
-            res.send("ERR");
+            console.log(err);
         }
     });
     res.redirect('/login');
@@ -99,9 +104,10 @@ app.post('/login', async (req, res) => {
                 if (err) throw err
 
                 //if both match than you can do anything
+                // SUCCESSFULL LOGIN HERE !!!
                 if (data) {
                     let doc = await User.findOneAndUpdate({email: req.body.email}, {loggedIn: true});
-                    req.flash('user', user.name);
+                    req.flash('userEmail', user.email);
                     res.redirect('/');
                 } else {
                     res.render('login.ejs', {msg: "Incorrect credentials"});
